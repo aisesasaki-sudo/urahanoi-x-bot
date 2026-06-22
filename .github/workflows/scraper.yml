@@ -1,0 +1,29 @@
+name: Weekly Blog Scraper
+
+on:
+  schedule:
+    - cron: '0 2 * * 1'  # UTC 02:00 月曜 = Hanoi 09:00 月曜
+  workflow_dispatch:       # 手動実行用
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests gspread google-auth
+
+      - name: Run scraper
+        env:
+          GOOGLE_SHEETS_CREDENTIALS: ${{ secrets.GOOGLE_SHEETS_CREDENTIALS }}
+          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+        run: python scraper.py
