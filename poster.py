@@ -130,7 +130,7 @@ def main():
     args = parser.parse_args()
     cat = args.category
     cfg = CATEGORY_CONFIG[cat]
-        print(f"[START] {cat} ({cfg['label']})")
+    print(f"[START] {cat} ({cfg['label']})")
     claude = get_anthropic_client()
     twitter = get_twitter_client()
     gc = get_sheets_client()
