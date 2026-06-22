@@ -120,7 +120,7 @@ def write_to_sheet(gc, result, category, status):
 
 def post_tweet(twitter, text):
     r = twitter.create_tweet(text=text)
-    print(f"[X] https://x.com/i/web/status/{r.data[\"id\"]}")
+    print(f"[X] https://x.com/i/web/status/{r.data['id']}")
     return r.data["id"]
 
 def main():
@@ -130,7 +130,7 @@ def main():
     args = parser.parse_args()
     cat = args.category
     cfg = CATEGORY_CONFIG[cat]
-    print(f"[START] {cat} ({cfg[\"label\"]})")
+        print(f"[START] {cat} ({cfg['label']})")
     claude = get_anthropic_client()
     twitter = get_twitter_client()
     gc = get_sheets_client()
