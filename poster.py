@@ -61,7 +61,7 @@ def collect_and_generate_A(client):
     response = client.messages.create(
         model="claude-sonnet-4-6", max_tokens=2000, system=SYSTEM_A,
         tools=[{"type": "web_search_20250305", "name": "web_search"}],
-        messages=[{"role": "user", "content": WEB_SEARCH_PROMPT.format(today=today)}],
+        messages=[{"role": "user", "content": WEB_SEARCH_PROMPT.replace("{today}", today)}],
     )
     full_text = "".join(b.text for b in response.content if hasattr(b, "text"))
     m = re.search(r"```json\s*(.*?)\s*```", full_text, re.DOTALL)
@@ -104,7 +104,7 @@ def collect_B_tweets(twitter):
 def generate_B(client, tweets_text):
     response = client.messages.create(
         model="claude-sonnet-4-6", max_tokens=1000, system=SYSTEM_B,
-        messages=[{"role": "user", "content": X_SEARCH_PROMPT.format(tweets_text=tweets_text)}],
+        messages=[{"role": "user", "content": X_SEARCH_PROMPT.replace("{tweets_text}", tweets_text)}],
     )
     full_text = response.content[0].text
     m = re.search(r"```json\s*(.*?)\s*```", full_text, re.DOTALL)
