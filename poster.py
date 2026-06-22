@@ -82,9 +82,10 @@ X_SEARCH_PROMPT = """
 特定アカウント・個人情報不使用。対象: バンコク・バリ・マニラ・ハノイ・台湾・韓国。
 「現地に住んでいる人間が最近気づいたこと」として、カジュアルな観察・感想として書く。
 煽り文句・マーケティング表現は使わない。
-【収集投稿】{tweets_text}
+最も面白いと思ったツイートを1つ選び、そのIDを quote_tweet_id に入れ、一言コメントを書く。
+【収集投稿（ID付き）】{tweets_text}
 JSON出力（```json ... ```）:
-{"tweet": "ツイート本文", "source_url": "", "topic": "テーマ説明"}
+{"tweet": "コメント本文（200〜350文字）", "quote_tweet_id": "引用するツイートのID", "source_url": "", "topic": "テーマ説明"}
 """
 
 X_QUERIES = ["東南アジア 夜遊び", "バンコク ナイトライフ", "バリ島 夜"]
@@ -100,14 +101,18 @@ def collect_B_tweets(twitter):
             if r.data:
                 for t in r.data:
                     m = t.public_metrics
-                    collected.append((m["like_count"] + m["retweet_count"]*2, t.text))
+                    collected.append((m["like_count"] + m["retweet_count"]*2, t.id, t.text))
         except Exception as e:
             print(f"[WARN] {q}: {e}")
-    if not collected: return "（X検索結果なし。東南アジア夜遊びトレンドで生成）"
+    if not collected:
+        return "（X検索結果なし。東南アジア夜遊びトレンドで生成）", {}
     collected.sort(key=lambda x: x[0], reverse=True)
-    return "\n---\n".join([t for _, t in collected[:5]])
+    top = collected[:5]
+    tweet_map = {str(tid): f"https://x.com/i/web/status/{tid}" for _, tid, _ in top}
+    tweets_text = "\n---\n".join([f"ID:{tid}\n{text}" for _, tid, text in top])
+    return tweets_text, tweet_map
 
-def generate_B(client, tweets_text):
+def generate_B(client, tweets_text, tweet_map):
     response = client.messages.create(
         model="claude-sonnet-4-6", max_tokens=1000, system=SYSTEM_B,
         messages=[{"role": "user", "content": X_SEARCH_PROMPT.replace("{tweets_text}", tweets_text)}],
@@ -115,7 +120,12 @@ def generate_B(client, tweets_text):
     full_text = response.content[0].text
     m = re.search(r"```json\s*(.*?)\s*```", full_text, re.DOTALL)
     if not m: raise ValueError(f"JSON not found:\n{full_text}")
-    return json.loads(m.group(1))
+    result = json.loads(m.group(1))
+    qtid = str(result.get("quote_tweet_id", ""))
+    if qtid and qtid in tweet_map:
+        result["source_url"] = tweet_map[qtid]
+        print(f"[QuoteRT] {tweet_map[qtid]}")
+    return result
 
 def write_to_sheet(gc, result, category, status):
     sh = gc.open_by_key(os.environ["SPREADSHEET_ID"])
@@ -124,8 +134,11 @@ def write_to_sheet(gc, result, category, status):
     sh.sheet1.append_row([now, category, tweet, len(tweet), result.get("source_url",""), status, now if status=="投稿済" else ""])
     print(f"[Sheets] {len(tweet)}文字 / {category} / {status}")
 
-def post_tweet(twitter, text):
-    r = twitter.create_tweet(text=text)
+def post_tweet(twitter, text, quote_tweet_id=None):
+    kwargs = {"text": text}
+    if quote_tweet_id:
+        kwargs["quote_tweet_id"] = int(quote_tweet_id)
+    r = twitter.create_tweet(**kwargs)
     print(f"[X] https://x.com/i/web/status/{r.data['id']}")
     return r.data["id"]
 
@@ -140,15 +153,23 @@ def main():
     claude = get_anthropic_client()
     twitter = get_twitter_client()
     gc = get_sheets_client()
-    result = collect_and_generate_A(claude) if cat=="A" else generate_B(claude, collect_B_tweets(twitter))
+    if cat == "A":
+        result = collect_and_generate_A(claude)
+        quote_tweet_id = None
+    else:
+        tweets_text, tweet_map = collect_B_tweets(twitter)
+        result = generate_B(claude, tweets_text, tweet_map)
+        quote_tweet_id = str(result.get("quote_tweet_id", "")) or None
     text = result["tweet"]
     print(f"[Generated] {len(text)}文字")
     if not (cfg["min_chars"] <= len(text) <= cfg["max_chars"]):
         print(f"[WARN] 文字数範囲外: {len(text)}")
     if args.dry_run:
+        if quote_tweet_id:
+            print(f"[DRY-RUN] 引用RT元: https://x.com/i/web/status/{quote_tweet_id}")
         write_to_sheet(gc, result, cat, "ドライラン")
     else:
-        post_tweet(twitter, text)
+        post_tweet(twitter, text, quote_tweet_id)
         write_to_sheet(gc, result, cat, "投稿済")
     print("[DONE]")
 
