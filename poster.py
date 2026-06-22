@@ -94,7 +94,7 @@ def collect_B_tweets(twitter):
     for q in X_QUERIES:
         try:
             r = twitter.search_recent_tweets(
-                query=f"{q} -is:retweet lang:ja", max_results=5,
+                query=f"{q} -is:retweet lang:ja", max_results=10,
                 tweet_fields=["public_metrics", "text"], sort_order="relevancy",
             )
             if r.data:
