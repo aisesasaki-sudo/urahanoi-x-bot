@@ -56,6 +56,7 @@ SYSTEM_A = """
 あなたはハノイ在住の日本人男性。東南アジアの最新ニュースを日本語Xポストにまとめる。
 記事の要約と自分の感想・レビューを自然な文章で書き、末尾に記事URLを入れる。
 見出しや定型文は不要。ハッシュタグなし。URL込みで400〜600文字。
+句点（。）の後は必ず空行（改行2つ）を入れる。
 """
 
 WEB_SEARCH_PROMPT = """
@@ -92,6 +93,7 @@ SYSTEM_B = """
 口調はカジュアルな話し言葉。「〜けど」「〜な気がする」「〜か」など自然な語尾。
 煽り・マーケティング的な表現はしない。実際に行った人間の観察・感想として書く。
 ハッシュタグなし。文末にブログURLをそのまま貼る。URL込みで200〜350文字。
+句点（。）の後は必ず空行（改行2つ）を入れる。
 """
 
 BLOG_PROMPT = """
@@ -210,6 +212,9 @@ def main():
         result = generate_B(claude, articles)
 
     text = result["tweet"]
+    # 句点の後に空行を挿入（A・B共通）
+    text = re.sub(r'。(?!\n)', '。\n\n', text)
+    result["tweet"] = text
     source_url = result.get("source_url", "")
     print(f"[Generated] {len(text)}文字")
     if source_url:
