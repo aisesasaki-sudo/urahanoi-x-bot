@@ -103,11 +103,10 @@ BLOG_PROMPT = """
 {articles_text}
 
 JSON出力（```json ... ```）:
-{"tweet": "投稿本文（末尾にURL含む）", "source_url": "選んだ記事のURL", "topic": "テーマ説明"}
+{{"tweet": "投稿本文（末尾にURL含む）", "source_url": "選んだ記事のURL", "topic": "テーマ説明"}}
 """
 
 def collect_B_articles(gc):
-    """Sheets「記事リスト」から未投稿の記事を取得。"""
     sh = gc.open_by_key(os.environ["SPREADSHEET_ID"])
     try:
         ws = sh.worksheet(ARTICLES_TAB)
