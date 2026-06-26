@@ -1,9 +1,7 @@
 name: Evening Post - Category B (SEA Nightlife)
 
 on:
-  schedule:
-    - cron: '0 14 * * *'  # UTC 14:00 = Hanoi 21:00
-  workflow_dispatch:       # 手動実行用
+  workflow_dispatch:       # 手動実行用のみ（スケジュール無効）
 
 jobs:
   post:
@@ -32,4 +30,4 @@ jobs:
           X_BEARER_TOKEN: ${{ secrets.X_BEARER_TOKEN }}
           GOOGLE_SHEETS_CREDENTIALS: ${{ secrets.GOOGLE_SHEETS_CREDENTIALS }}
           SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
-        run: python poster.py --category B 
+        run: python poster.py --category B
