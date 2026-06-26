@@ -1,8 +1,9 @@
 """
 urahanoi-x-bot / poster.py
 Usage:
-  python poster.py --category A   # 朝9時: 東南アジア全般 (web検索)
-  python poster.py --category B   # 夜21時: ブログ記事紹介
+  python poster.py --category A      # A: 東南アジア全般 (web検索)
+  python poster.py --category B      # B: ブログ記事紹介
+  python poster.py --category auto   # 前回の逆を自動選択
 """
 
 import argparse
@@ -22,6 +23,15 @@ CATEGORY_CONFIG = {
     "A": {"label": "東南アジア全般", "min_chars": 400, "max_chars": 600},
     "B": {"label": "ブログ記事紹介", "min_chars": 200, "max_chars": 350},
 }
+
+def get_last_category(gc):
+    """Sheetsの投稿ログから直前のカテゴリを取得"""
+    sh = gc.open_by_key(os.environ["SPREADSHEET_ID"])
+    rows = sh.sheet1.get_all_values()
+    for row in reversed(rows):
+        if len(row) >= 2 and row[1] in ("A", "B"):
+            return row[1]
+    return "B"  # 初回はAから始める
 
 ARTICLES_TAB = "記事リスト"
 
@@ -192,17 +202,22 @@ def post_tweet(twitter, text):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--category", choices=["A", "B"], required=True)
+    parser.add_argument("--category", choices=["A", "B", "auto"], required=True)
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
-
-    cat = args.category
-    cfg = CATEGORY_CONFIG[cat]
-    print(f"[START] {cat} ({cfg['label']})")
 
     claude = get_anthropic_client()
     twitter = get_twitter_client()
     gc = get_sheets_client()
+
+    cat = args.category
+    if cat == "auto":
+        last = get_last_category(gc)
+        cat = "B" if last == "A" else "A"
+        print(f"[AUTO] 前回: {last} → 今回: {cat}")
+
+    cfg = CATEGORY_CONFIG[cat]
+    print(f"[START] {cat} ({cfg['label']})")
 
     if cat == "A":
         result = collect_and_generate_A(claude)
@@ -212,7 +227,7 @@ def main():
         result = generate_B(claude, articles)
 
     text = result["tweet"]
-    # 句点の後に空行を挿入（A・B共通）
+    # 句点の後に空行を挿入（A・B共通、重複しない）
     text = re.sub(r'。(?!\n)', '。\n\n', text)
     result["tweet"] = text
     source_url = result.get("source_url", "")
