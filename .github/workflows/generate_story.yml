@@ -1,0 +1,23 @@
+name: Generate Story Drafts (Weekly Sat)
+
+on:
+  schedule:
+    - cron: '0 2 * * 6'  # UTC 02:00 土曜 = ハノイ 09:00 土曜
+  workflow_dispatch:
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install anthropic gspread google-auth
+      - name: Generate tweet drafts
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GOOGLE_SHEETS_CREDENTIALS: ${{ secrets.GOOGLE_SHEETS_CREDENTIALS }}
+          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+        run: python generate_story.py
