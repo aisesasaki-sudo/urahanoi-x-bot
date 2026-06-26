@@ -1,9 +1,7 @@
 name: Morning Post - Category A (SEA General)
 
 on:
-  schedule:
-    - cron: '0 2 * * *'   # UTC 02:00 = Hanoi 09:00
-  workflow_dispatch:       # 手動実行用
+  workflow_dispatch:       # 手動実行用のみ（スケジュール無効）
 
 jobs:
   post:
