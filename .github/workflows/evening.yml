@@ -1,9 +1,7 @@
 name: Evening Post - Category B (SEA Nightlife)
 
 on:
-  workflow_dispatch:       # 手動実行用（テスト・緊急投稿用）
-  schedule:
-    - cron: '0 5 * * *'    # 毎日 05:00 UTC = ベトナム時間 12:00（A/B共通）
+  workflow_dispatch:       # 手動実行用のみ（スケジュール無効・daily.ymlのA/B交互投稿に一本化）
 
 jobs:
   post:
