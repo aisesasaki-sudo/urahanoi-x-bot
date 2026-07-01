@@ -2,7 +2,7 @@ name: Daily Post (A/B alternate)
 
 on:
   schedule:
-    - cron: '0 11 * * *'  # UTC 11:00 = Hanoi 18:00
+    - cron: '0 10 * * *'  # UTC 10:00 = Hanoi 17:00（実行遅延がありうるため様子見）
   workflow_dispatch:
 
 jobs:
